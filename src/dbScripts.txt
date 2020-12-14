@@ -1,0 +1,90 @@
+use('testDb');
+
+// 3 filter condition
+// More than 0 comments AND more than 0 answer score OR accepted_answer = true
+db.posts
+  .find(
+    { comment_count: { $gt: 0 }, $or: [{ 'answers.score': { $gt: 0 } }, { 'answers.is_accepted': true }] },
+    { _id: 0, body_markdown: 0, 'answers._id': 0, 'answers.question_id': 0, 'answers.user_id': 0 },
+    { creation_date: 1 },
+  )
+  .pretty();
+
+// Agregation with sum and count
+// Total number of questons, averege number of comments per answer, cum of answer count
+db.posts.aggregate([
+  {
+    $group: {
+      _id: null,
+      total_awnsers: {
+      _id: null,
+      total_awnsers: { $sum: "$answer_count" },
+      averege_number_of_comments: { $avg: "$comment_count" },
+      total_questions: { $sum: 1 }
+    }
+  }
+]).pretty();
+
+// Agregation with addfields, group, sort, sum, min and max
+// Total number of questons, averege number of comments per answer, sum of answer count, sorted by group answer count
+db.posts.aggregate([
+  {
+    $addFields: {
+      total_answer_score: {$sum: '$answers.score'},
+      highest_awnser_reputation: {$max: '$answers.owner.reputation'},
+      lowest_awnser_reputation: {$min: '$answers.owner.reputation'}
+    },
+    $group: {
+      _id: '$answer_count',
+      number_of_questions: { $sum: 1 },
+      total_answers: {$sum: '$answer_count'},
+      highest_awnser_reputation: {$max: '$answers.owner.reputation'},
+      lowest_awnser_reputation: {$min: '$lowest_awnser_reputation'}
+    },
+    $sort: {
+      _id: 1
+    }
+]).pretty();
+
+// Agregation with unwind, group, sort, and max
+// Users with their total answer score and reputation ordered descending by score
+db.posts.aggregate([
+  {
+    $unwind: {
+      path: '$answers',
+      includeArrayIndex: 'index',
+      preserveNullAndEmptyArrays: false
+    },
+    $group: {
+      _id: '$answers.owner._id',
+      username: {$first: '$answers.owner.display_name'},
+      sum_of_score: {$sum: '$answers.score'},
+      reputation: {$first: '$answers.owner.reputation'}
+    },
+    $sort: {
+      sum_of_score: -1
+    }
+]).pretty();
+
+// Agregation with unwind, sort, group, project, first, push, max, slice
+// Shows the top answer of a user
+db.posts.aggregate([
+  {
+    $unwind: {
+      path: '$answers',
+      includeArrayIndex: 'index',
+      preserveNullAndEmptyArrays: false
+    },
+    $sort: {
+      "answers.score": -1
+    },
+    $group: {
+      _id: "$_id",
+      name: { $first: "$answers.owner.display_name" },
+      answers: { $push: "$answers" },
+      number_of_awnsers: { $max: '$answer_count'}
+    },
+    $project: {
+      top_answer: { $slice: [ "$answers", 1 ] }
+    }
+]).pretty();
