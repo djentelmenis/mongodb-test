@@ -2,9 +2,10 @@
 
 ## Using a local mongodb server
 
-1. Run the local mongodb server with the default params
-2. Run index index.ts to retrieve data from stackoverflow.com and populate a new database `testDb` with a collection `posts`
-3. `dbScripts.txt` contains mongodb queries for the database. They can bie copy-pasted in to MongoDBCompass or run through the mongo CLI
+1. Run `npm i`
+2. Run `npm start` (`index.ts`) to retrieve data from stackoverflow.com and populate a new database `testDb` with a collection `posts`
+3. Run the local mongodb server with the default params
+4. `dbScripts.txt` contains mongodb queries for the database. They can bie copy-pasted in to MongoDBCompass or run through the mongo CLI
 
 ## Data backup
 
